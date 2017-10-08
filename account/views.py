@@ -38,8 +38,13 @@ def make_task(request):
         due_date = request.POST.get('due_date', '')
         done_progress = request.POST.get('done_progress', '')
         score = request.POST.get('score', '')
+        if Category.objects.filter(name=category).count() < 1:
+            c = Category(name=category)
+            c.save()
+        else:
+            c = Category.objects.get(name=category)
         f = FulfillUser.objects.get(user=User.objects.get(username=username))
-        t = Task(title=title, description=description, difficulty=difficulty, category=category,
+        t = Task(title=title, description=description, difficulty=difficulty, category=c,
                  due_date=due_date, done_progress=done_progress, score=score, user=f)
         t.save()
 
@@ -59,9 +64,12 @@ def user_score(request):
 
 def user_rank(request):
     if request.method == 'GET':
-        username = request.POST.get('username','')
-        rankings = Task.objects.filter(category='a').values('category').annotate(Sum('score'))
-        return Response(rankings)
+        username = request.GET.get('username','')
+        result = []
+        for j in Category.objects.all():
+            rankings = Task.objects.filter(category=j).values('user').annotate(Sum('score'))
+            result.append(rankings)
+        return Response(result)
 
 
 def first_scores(request):
@@ -73,3 +81,11 @@ def first_scores(request):
                 if j.user == i:
                     result[i.user.username] += j.score
         print(result)
+
+
+def reset_user(request):
+    if request.method == 'POST':
+        username = request.POST.get('username', '')
+        FulfillUser.objects.get(user=User.objects.get(username=username)).delete()
+        User.objects.get(username=username).delete()
+        return Response({'status':'ok'})    
