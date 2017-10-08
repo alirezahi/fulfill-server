@@ -80,7 +80,7 @@ def first_scores(request):
             for j in Task.objects.all():
                 if j.user == i:
                     result[i.user.username] += j.score
-        print(result)
+        return Response(results)
 
 
 def reset_user(request):
